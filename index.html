@@ -432,19 +432,22 @@
             }
             
             .map-container {
-                flex: 1;
+                flex: 0 0 40vh; /* Fixed height: 40% of viewport height */
                 margin: 1rem;
+                min-height: 250px; /* Minimum height to ensure visibility */
             }
-            
-
             
             .terminal {
                 margin: 1rem;
                 max-height: 200px;
+                flex: 1;
+                min-height: 150px;
             }
             
             .scan-results {
                 margin: 1rem;
+                max-height: 200px;
+                flex-shrink: 0;
             }
             
             .disclaimer {
