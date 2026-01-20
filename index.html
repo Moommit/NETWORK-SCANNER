@@ -484,13 +484,16 @@
 </head>
 <body>
     <div class="header">
-        <h1>🗼 NETWORK SCANNER v2.1</h1>
-        <div style="color: #7d8590; font-size: 0.9rem;">OSINT Interface</div>
+        <h1 id="main-title">🗼 NETWORK SCANNER v2.1</h1>
+        <div style="color: #7d8590; font-size: 0.9rem;" id="main-subtitle">OSINT Interface</div>
         
         <!-- Sound Control -->
         <div class="sound-control">
             <button class="sound-btn" id="sound-btn" onclick="toggleSound()" title="Toggle Sound">
                 🔊
+            </button>
+            <button class="sound-btn" id="lang-btn" onclick="toggleLanguage()" title="Switch Language">
+                🌐
             </button>
         </div>
     </div>
@@ -501,7 +504,7 @@
         </div>
 
         <div style="flex: 1; display: flex; flex-direction: column;">            <div class="location-control">
-                <div class="location-header">📍 LIVE LOCATION</div>
+                <div class="location-header" id="location-header">📍 LIVE LOCATION</div>
                 <div class="location-info" id="location-info">
                     <span class="location-status" id="location-status"></span>
                     <span id="location-text">Location tracking disabled</span>
@@ -509,19 +512,19 @@
                 <button class="location-btn" id="location-btn" onclick="toggleLiveLocation()">ENABLE TRACKING</button>
             </div>
                         <div class="triangle-control">
-                <div class="triangle-header">📐 TRIANGULATION TOOL</div>
+                <div class="triangle-header" id="triangle-header">📐 TRIANGULATION TOOL</div>
                 <div class="triangle-info" id="triangle-info">Click 3 locations to triangulate center point</div>
                 <button class="triangle-btn" id="triangle-btn" onclick="toggleTriangleMode()">START TRIANGULATION</button>
                 <button class="triangle-btn" onclick="clearTriangle()" style="display: none;" id="clear-btn">CLEAR</button>
             </div>
             
             <div class="terminal" id="terminal">
-                <div class="terminal-header">Terminal Output</div>
+                <div class="terminal-header" id="terminal-header">Terminal Output</div>
                 <div class="terminal-content" id="terminal-content"></div>
             </div>
 
             <div class="scan-results" id="scan-results">
-                <div class="results-header">Scan Results - Mobile Devices Detected</div>
+                <div class="results-header" id="results-header">Scan Results - Mobile Devices Detected</div>
                 <div class="results-content" id="results-content"></div>
             </div>
         </div>
@@ -530,17 +533,17 @@
     <!-- Proximity Warning Modal -->
     <div class="modal-overlay" id="proximityModal">
         <div class="modal">
-            <h3>⚠️ PROXIMITY REQUIRED</h3>
-            <p>
+            <h3 id="modal-title">⚠️ PROXIMITY REQUIRED</h3>
+            <p id="modal-text1">
                 <strong>Warning:</strong> Physical proximity to scan location required.<br>
                 You must be within <strong>50 meters</strong> of the target coordinates to initiate scan.
             </p>
-            <p style="font-size: 0.85rem; color: #7d8590;">
+            <p style="font-size: 0.85rem; color: #7d8590;" id="modal-text2">
                 Emergency override available for authorized personnel.
             </p>
             <div class="modal-buttons">
-                <button class="modal-btn modal-btn-secondary" onclick="closeProximityModal()">CANCEL</button>
-                <button class="modal-btn modal-btn-primary" onclick="proceedWithScan()">PROCEED</button>
+                <button class="modal-btn modal-btn-secondary" onclick="closeProximityModal()" id="modal-cancel">CANCEL</button>
+                <button class="modal-btn modal-btn-primary" onclick="proceedWithScan()" id="modal-proceed">PROCEED</button>
             </div>
         </div>
     </div>
@@ -564,7 +567,118 @@
                 watchId: null
             },
             audioContext: null,
-            soundEnabled: true
+            soundEnabled: true,
+            currentLanguage: 'en'
+        };
+
+        // Translation System
+        const translations = {
+            en: {
+                mainTitle: '🗼 NETWORK SCANNER v2.1',
+                mainSubtitle: 'OSINT Interface',
+                locationHeader: '📍 LIVE LOCATION',
+                locationDisabled: 'Location tracking disabled',
+                locationRequesting: 'Requesting location access...',
+                locationActive: 'Active',
+                locationDenied: 'Location access denied',
+                locationUnavailable: 'Location unavailable',
+                locationTimeout: 'Location request timeout',
+                locationError: 'Unknown location error',
+                locationNotSupported: 'Geolocation not supported',
+                enableTracking: 'ENABLE TRACKING',
+                disableTracking: 'DISABLE TRACKING',
+                triangleHeader: '📐 TRIANGULATION TOOL',
+                triangleInfo: 'Click 3 locations to triangulate center point',
+                triangleInfoActive: 'Click 3 locations on the map to create triangle',
+                triangleComplete: 'Triangulation complete! Center point calculated.',
+                startTriangulation: 'START TRIANGULATION',
+                stopTriangulation: 'STOP TRIANGULATION',
+                newTriangulation: 'NEW TRIANGULATION',
+                clear: 'CLEAR',
+                terminalHeader: 'Terminal Output',
+                resultsHeader: 'Scan Results - Mobile Devices Detected',
+                modalTitle: '⚠️ PROXIMITY REQUIRED',
+                modalText1: '<strong>Warning:</strong> Physical proximity to scan location required.<br>You must be within <strong>50 meters</strong> of the target coordinates to initiate scan.',
+                modalText2: 'Emergency override available for authorized personnel.',
+                cancel: 'CANCEL',
+                proceed: 'PROCEED',
+                scanNetwork: 'SCAN NETWORK',
+                scanLocation: 'SCAN LOCATION',
+                mainTower: 'MAIN CELL TOWER',
+                yourDevice: 'YOUR DEVICE',
+                liveLocation: 'Live Location',
+                triangulationCenter: 'TRIANGULATION CENTER',
+                calculatedPosition: 'Calculated Position',
+                lastSeen: 'Last seen',
+                accuracy: 'Accuracy',
+                // Terminal messages
+                terminalInit: '> Initializing network scanner...',
+                terminalUplink: '> Establishing uplink to cell tower CH-BS-001...',
+                terminalAuth: '> Authentication successful',
+                terminalScan: '> Scanning for active mobile devices...',
+                terminalTriangulate: '> Triangulating signal sources...',
+                terminalParse: '> Parsing metadata...',
+                terminalCross: '> Cross-referencing network logs...',
+                terminalComplete: '> Scan complete.',
+                terminalFound: '> Found',
+                terminalDevices: 'active devices in range',
+                terminalUnlock: '> Unlocking additional network nodes...',
+                terminalInitScan: '> Initializing scan at',
+                terminalConnect: '> Establishing connection to local node...'
+            },
+            de: {
+                mainTitle: '🗼 NETZWERK SCANNER v2.1',
+                mainSubtitle: 'OSINT Oberfläche',
+                locationHeader: '📍 LIVE STANDORT',
+                locationDisabled: 'Standortverfolgung deaktiviert',
+                locationRequesting: 'Standortzugriff anfordern...',
+                locationActive: 'Aktiv',
+                locationDenied: 'Standortzugriff verweigert',
+                locationUnavailable: 'Standort nicht verfügbar',
+                locationTimeout: 'Standortanfrage Zeitüberschreitung',
+                locationError: 'Unbekannter Standortfehler',
+                locationNotSupported: 'Geolokalisierung nicht unterstützt',
+                enableTracking: 'VERFOLGUNG AKTIVIEREN',
+                disableTracking: 'VERFOLGUNG DEAKTIVIEREN',
+                triangleHeader: '📐 TRIANGULATION WERKZEUG',
+                triangleInfo: 'Klicken Sie 3 Standorte für Triangulation',
+                triangleInfoActive: 'Klicken Sie 3 Standorte auf der Karte',
+                triangleComplete: 'Triangulation abgeschlossen! Mittelpunkt berechnet.',
+                startTriangulation: 'TRIANGULATION STARTEN',
+                stopTriangulation: 'TRIANGULATION STOPPEN',
+                newTriangulation: 'NEUE TRIANGULATION',
+                clear: 'LÖSCHEN',
+                terminalHeader: 'Terminal Ausgabe',
+                resultsHeader: 'Scan Ergebnisse - Erkannte Mobilgeräte',
+                modalTitle: '⚠️ NÄHE ERFORDERLICH',
+                modalText1: '<strong>Warnung:</strong> Physische Nähe zum Scan-Standort erforderlich.<br>Sie müssen sich innerhalb von <strong>50 Metern</strong> der Zielkoordinaten befinden.',
+                modalText2: 'Notfall-Override für autorisiertes Personal verfügbar.',
+                cancel: 'ABBRECHEN',
+                proceed: 'FORTFAHREN',
+                scanNetwork: 'NETZWERK SCANNEN',
+                scanLocation: 'STANDORT SCANNEN',
+                mainTower: 'HAUPT FUNKTURM',
+                yourDevice: 'IHR GERÄT',
+                liveLocation: 'Live Standort',
+                triangulationCenter: 'TRIANGULATION ZENTRUM',
+                calculatedPosition: 'Berechnete Position',
+                lastSeen: 'Zuletzt gesehen',
+                accuracy: 'Genauigkeit',
+                // Terminal messages
+                terminalInit: '> Netzwerk Scanner wird initialisiert...',
+                terminalUplink: '> Verbindung zu Funkturm CH-BS-001 wird hergestellt...',
+                terminalAuth: '> Authentifizierung erfolgreich',
+                terminalScan: '> Scannen nach aktiven Mobilgeräten...',
+                terminalTriangulate: '> Triangulation der Signalquellen...',
+                terminalParse: '> Metadaten werden analysiert...',
+                terminalCross: '> Netzwerk-Logs werden abgeglichen...',
+                terminalComplete: '> Scan abgeschlossen.',
+                terminalFound: '> Gefunden:',
+                terminalDevices: 'aktive Geräte in Reichweite',
+                terminalUnlock: '> Zusätzliche Netzwerk-Knoten werden freigeschaltet...',
+                terminalInitScan: '> Scan wird initialisiert bei',
+                terminalConnect: '> Verbindung zum lokalen Knoten wird hergestellt...'
+            }
         };
 
         // Coordinates
@@ -679,17 +793,17 @@
             hideResults();
             clearTerminal();
 
-            // Scanning animation
-            await addTerminalLine('> Initializing network scanner...', 100);
-            await addTerminalLine('> Establishing uplink to cell tower CH-BS-001...', 800);
-            await addTerminalLine('> Authentication successful', 600);
-            await addTerminalLine('> Scanning for active mobile devices...', 700);
-            await addTerminalLine('> Triangulating signal sources...', 900);
-            await addTerminalLine('> Parsing metadata...', 500);
-            await addTerminalLine('> Cross-referencing network logs...', 800);
-            await addTerminalLine('> Scan complete.', 400);
-            await addTerminalLine('> Found 15 active devices in range', 600);
-            await addTerminalLine('> Unlocking additional network nodes...', 700);
+            // Scanning animation with translations
+            await addTerminalLine(getText('terminalInit'), 100);
+            await addTerminalLine(getText('terminalUplink'), 800);
+            await addTerminalLine(getText('terminalAuth'), 600);
+            await addTerminalLine(getText('terminalScan'), 700);
+            await addTerminalLine(getText('terminalTriangulate'), 900);
+            await addTerminalLine(getText('terminalParse'), 500);
+            await addTerminalLine(getText('terminalCross'), 800);
+            await addTerminalLine(getText('terminalComplete'), 400);
+            await addTerminalLine(`${getText('terminalFound')} 15 ${getText('terminalDevices')}`, 600);
+            await addTerminalLine(getText('terminalUnlock'), 700);
 
             gameState.mainTowerScanned = true;
             unlockAllPoints();
@@ -751,16 +865,17 @@
             
             clearTerminal();
 
-            // Scanning animation
-            await addTerminalLine(`> Initializing scan at ${currentScanPointId.toUpperCase()}...`, 100);
-            await addTerminalLine('> Establishing connection to local node...', 800);
-            await addTerminalLine('> Authentication successful', 600);
-            await addTerminalLine('> Scanning for active mobile devices...', 700);
-            await addTerminalLine('> Triangulating signal sources...', 900);
-            await addTerminalLine('> Parsing metadata...', 500);
-            await addTerminalLine('> Cross-referencing network logs...', 800);
-            await addTerminalLine('> Scan complete.', 400);
-            await addTerminalLine(`> Found ${Math.floor(Math.random() * 8) + 7} active devices in range`, 600);
+            // Scanning animation with translations
+            await addTerminalLine(`${getText('terminalInitScan')} ${currentScanPointId.toUpperCase()}...`, 100);
+            await addTerminalLine(getText('terminalConnect'), 800);
+            await addTerminalLine(getText('terminalAuth'), 600);
+            await addTerminalLine(getText('terminalScan'), 700);
+            await addTerminalLine(getText('terminalTriangulate'), 900);
+            await addTerminalLine(getText('terminalParse'), 500);
+            await addTerminalLine(getText('terminalCross'), 800);
+            await addTerminalLine(getText('terminalComplete'), 400);
+            const deviceCount = Math.floor(Math.random() * 8) + 7;
+            await addTerminalLine(`${getText('terminalFound')} ${deviceCount} ${getText('terminalDevices')}`, 600);
 
             generateScanResults(currentScanPointId, false);
             displayScanResults(currentScanPointId);
@@ -888,7 +1003,7 @@
                         ${device.name ? ` (${device.name})` : ''}
                     </div>
                     <div class="phone-details">
-                        <span>Last seen: ${device.lastSeen}</span>
+                        <span>${getText('lastSeen')}: ${device.lastSeen}</span>
                         <span class="signal-strength signal-${device.signal.toLowerCase()}">${device.signal}</span>
                     </div>
                 `;
@@ -903,7 +1018,112 @@
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
             initAudio();
+            updateLanguage();
         });
+
+        // Language System
+        function toggleLanguage() {
+            playSound('button');
+            gameState.currentLanguage = gameState.currentLanguage === 'en' ? 'de' : 'en';
+            updateLanguage();
+        }
+
+        function getText(key) {
+            return translations[gameState.currentLanguage][key] || translations.en[key] || key;
+        }
+
+        function updateLanguage() {
+            // Update static text elements
+            document.getElementById('main-title').textContent = getText('mainTitle');
+            document.getElementById('main-subtitle').textContent = getText('mainSubtitle');
+            document.getElementById('location-header').textContent = getText('locationHeader');
+            document.getElementById('triangle-header').textContent = getText('triangleHeader');
+            document.getElementById('terminal-header').textContent = getText('terminalHeader');
+            document.getElementById('results-header').textContent = getText('resultsHeader');
+            document.getElementById('modal-title').innerHTML = getText('modalTitle');
+            document.getElementById('modal-text1').innerHTML = getText('modalText1');
+            document.getElementById('modal-text2').textContent = getText('modalText2');
+            document.getElementById('modal-cancel').textContent = getText('cancel');
+            document.getElementById('modal-proceed').textContent = getText('proceed');
+            
+            // Update dynamic elements
+            updateLocationStatus(getCurrentLocationText(), gameState.liveLocation.enabled);
+            updateTriangleInfo();
+            updateButtons();
+            
+            // Update popup content if markers exist
+            if (mainTowerMarker) {
+                mainTowerMarker.setPopupContent(`
+                    <div style="text-align: center; padding: 0.5rem;">
+                        <strong>🗼 ${getText('mainTower')}</strong><br>
+                        Network Hub: CH-BS-001<br><br>
+                        <button class="scan-btn" onclick="scanMainTower()">${getText('scanNetwork')}</button>
+                    </div>
+                `);
+            }
+            
+            // Update point markers
+            pointMarkers.forEach(pm => {
+                const point = COORDINATES.points.find(p => p.id === pm.id);
+                pm.marker.setPopupContent(`
+                    <div style="text-align: center; padding: 0.5rem;">
+                        <strong>📡 ${point.name}</strong><br>
+                        Node: ${point.id.toUpperCase()}<br><br>
+                        <button class="scan-btn" onclick="scanPoint('${point.id}')">${getText('scanLocation')}</button>
+                    </div>
+                `);
+            });
+        }
+
+        function getCurrentLocationText() {
+            const locationText = document.getElementById('location-text').textContent;
+            if (locationText.includes('disabled') || locationText.includes('deaktiviert')) {
+                return getText('locationDisabled');
+            } else if (locationText.includes('Requesting') || locationText.includes('anfordern')) {
+                return getText('locationRequesting');
+            } else if (locationText.includes('Active') || locationText.includes('Aktiv')) {
+                const match = locationText.match(/\((.*?)\)/);
+                return getText('locationActive') + (match ? ` (${match[1]})` : '');
+            }
+            return locationText;
+        }
+
+        function updateTriangleInfo() {
+            const info = document.getElementById('triangle-info');
+            if (gameState.triangleMode) {
+                if (gameState.selectedPoints.length > 0) {
+                    info.textContent = `${getText('triangleInfoActive')} (${gameState.selectedPoints.length}/3)`;
+                } else {
+                    info.textContent = getText('triangleInfoActive');
+                }
+            } else if (info.textContent.includes('complete') || info.textContent.includes('abgeschlossen')) {
+                info.textContent = getText('triangleComplete');
+            } else {
+                info.textContent = getText('triangleInfo');
+            }
+        }
+
+        function updateButtons() {
+            const triangleBtn = document.getElementById('triangle-btn');
+            const locationBtn = document.getElementById('location-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            
+            if (gameState.triangleMode) {
+                triangleBtn.textContent = getText('stopTriangulation');
+            } else if (triangleBtn.textContent.includes('NEW') || triangleBtn.textContent.includes('NEUE')) {
+                triangleBtn.textContent = getText('newTriangulation');
+            } else {
+                triangleBtn.textContent = getText('startTriangulation');
+            }
+            
+            clearBtn.textContent = getText('clear');
+            
+            if (gameState.liveLocation.enabled) {
+                locationBtn.textContent = getText('disableTracking');
+            } else {
+                locationBtn.textContent = getText('enableTracking');
+            }
+        }
 
         // Audio System
         function initAudio() {
@@ -1051,12 +1271,12 @@
 
         function startLiveLocation() {
             if (!navigator.geolocation) {
-                updateLocationStatus('Geolocation not supported', false);
+                updateLocationStatus(getText('locationNotSupported'), false);
                 playSound('error');
                 return;
             }
 
-            updateLocationStatus('Requesting location access...', false);
+            updateLocationStatus(getText('locationRequesting'), false);
             playSound('button');
 
             const options = {
@@ -1072,7 +1292,7 @@
             );
 
             gameState.liveLocation.enabled = true;
-            document.getElementById('location-btn').textContent = 'DISABLE TRACKING';
+            document.getElementById('location-btn').textContent = getText('disableTracking');
             document.getElementById('location-btn').classList.add('active');
         }
 
@@ -1088,9 +1308,9 @@
             }
 
             gameState.liveLocation.enabled = false;
-            updateLocationStatus('Location tracking disabled', false);
+            updateLocationStatus(getText('locationDisabled'), false);
             
-            document.getElementById('location-btn').textContent = 'ENABLE TRACKING';
+            document.getElementById('location-btn').textContent = getText('enableTracking');
             document.getElementById('location-btn').classList.remove('active');
         }
 
@@ -1099,7 +1319,7 @@
             const lng = position.coords.longitude;
             const accuracy = position.coords.accuracy;
 
-            updateLocationStatus(`Active (±${Math.round(accuracy)}m accuracy)`, true);
+            updateLocationStatus(`${getText('locationActive')} (±${Math.round(accuracy)}m ${getText('accuracy')})`, true);
             playSound('location');
 
             // Remove old marker if exists
@@ -1118,11 +1338,11 @@
             }).addTo(map)
             .bindPopup(`
                 <div style="text-align: center; padding: 0.5rem;">
-                    <strong>📱 YOUR DEVICE</strong><br>
-                    Live Location<br>
+                    <strong>📱 ${getText('yourDevice')}</strong><br>
+                    ${getText('liveLocation')}<br>
                     <small>Lat: ${lat.toFixed(6)}</small><br>
                     <small>Lng: ${lng.toFixed(6)}</small><br>
-                    <small>Accuracy: ±${Math.round(accuracy)}m</small>
+                    <small>${getText('accuracy')}: ±${Math.round(accuracy)}m</small>
                 </div>
             `);
 
@@ -1143,22 +1363,22 @@
             let message = '';
             switch (error.code) {
                 case error.PERMISSION_DENIED:
-                    message = 'Location access denied';
+                    message = getText('locationDenied');
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    message = 'Location unavailable';
+                    message = getText('locationUnavailable');
                     break;
                 case error.TIMEOUT:
-                    message = 'Location request timeout';
+                    message = getText('locationTimeout');
                     break;
                 default:
-                    message = 'Unknown location error';
+                    message = getText('locationError');
                     break;
             }
             
             updateLocationStatus(message, false);
             gameState.liveLocation.enabled = false;
-            document.getElementById('location-btn').textContent = 'ENABLE TRACKING';
+            document.getElementById('location-btn').textContent = getText('enableTracking');
             document.getElementById('location-btn').classList.remove('active');
         }
 
@@ -1320,6 +1540,8 @@
         window.clearTriangle = clearTriangle;
         window.toggleLiveLocation = toggleLiveLocation;
         window.toggleSound = toggleSound;
+        window.toggleLanguage = toggleLanguage;
+        window.toggleLanguage = toggleLanguage;
     </script>
 </body>
 </html>
