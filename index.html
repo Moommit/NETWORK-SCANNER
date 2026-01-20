@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner - OSINT Simulation</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #58a6ff;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .disclaimer {
+            background: #21262d;
+            border: 1px solid #f85149;
+            color: #f85149;
+            padding: 0.75rem;
+            margin: 1rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 120px);
+        }
+
+        .map-container {
+            flex: 2;
+            position: relative;
+            border: 1px solid #30363d;
+            margin: 1rem;
+            margin-right: 0.5rem;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .terminal {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            margin: 1rem;
+            margin-left: 0.5rem;
+            max-height: none;
+            overflow-y: auto;
+            display: block;
+        }
+
+        .terminal-header {
+            background: #161b22;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #30363d;
+            color: #58a6ff;
+            font-weight: bold;
+        }
+
+        .terminal-content {
+            padding: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .terminal-line {
+            margin-bottom: 0.25rem;
+        }
+
+        .scan-results {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            margin: 1rem;
+            margin-left: 0.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .results-header {
+            background: #161b22;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #30363d;
+            color: #7c3aed;
+            font-weight: bold;
+        }
+
+        .results-content {
+            padding: 1rem;
+        }
+
+        .phone-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #21262d;
+            font-size: 0.9rem;
+        }
+
+        .phone-entry:last-child {
+            border-bottom: none;
+        }
+
+        .phone-entry.james {
+            background: rgba(88, 166, 255, 0.1);
+            border-left: 3px solid #58a6ff;
+            padding-left: 0.75rem;
+        }
+
+        .phone-number {
+            color: #f0f6fc;
+            font-weight: bold;
+        }
+
+        .phone-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #7d8590;
+        }
+
+        .signal-strength {
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .signal-high { background: #238636; color: white; }
+        .signal-medium { background: #d29922; color: white; }
+        .signal-low { background: #da3633; color: white; }
+
+        .scan-btn {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .scan-btn:hover {
+            background: #2ea043;
+        }
+
+        .scan-btn:disabled {
+            background: #6e7681;
+            cursor: not-allowed;
+        }
+
+        .triangle-control {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            margin: 1rem;
+            margin-right: 0.5rem;
+            padding: 1rem;
+        }
+
+        .triangle-header {
+            color: #f79009;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .triangle-info {
+            font-size: 0.8rem;
+            color: #7d8590;
+            margin-bottom: 1rem;
+        }
+
+        .triangle-btn {
+            background: #f79009;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        .triangle-btn:hover {
+            background: #e5890a;
+        }
+
+        .triangle-btn.active {
+            background: #2ea043;
+        }
+
+        .triangle-btn:disabled {
+            background: #6e7681;
+            cursor: not-allowed;
+        }
+
+        .location-control {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            margin: 1rem;
+            margin-right: 0.5rem;
+            padding: 1rem;
+        }
+
+        .location-header {
+            color: #2ea043;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .location-info {
+            font-size: 0.8rem;
+            color: #7d8590;
+            margin-bottom: 1rem;
+        }
+
+        .location-btn {
+            background: #2ea043;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .location-btn:hover {
+            background: #2c974b;
+        }
+
+        .location-btn.active {
+            background: #f85149;
+        }
+
+        .location-btn.active:hover {
+            background: #ff6b6b;
+        }
+
+        .location-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6e7681;
+            margin-right: 0.5rem;
+        }
+
+        .location-status.active {
+            background: #2ea043;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .sound-control {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 0.5rem;
+            z-index: 1000;
+        }
+
+        .sound-btn {
+            background: none;
+            border: none;
+            color: #c9d1d9;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .sound-btn:hover {
+            background: #30363d;
+        }
+
+        .sound-btn.muted {
+            color: #6e7681;
+        }
+
+        /* Custom Leaflet popup styles */
+        .leaflet-popup-content-wrapper {
+            background: #161b22;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+        }
+
+        .leaflet-popup-content {
+            margin: 0.5rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .leaflet-popup-tip {
+            background: #161b22;
+            border: 1px solid #30363d;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal {
+            background: #161b22;
+            border: 2px solid #f85149;
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            animation: modalAppear 0.3s ease-out;
+        }
+
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal h3 {
+            color: #f85149;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .modal p {
+            color: #c9d1d9;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-primary {
+            background: #238636;
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: #2ea043;
+        }
+
+        .modal-btn-secondary {
+            background: #6e7681;
+            color: white;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #7d8590;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                height: calc(100vh - 140px);
+            }
+            
+            .map-container {
+                flex: 1;
+                margin: 1rem;
+            }
+            
+            .terminal {
+                margin: 1rem;
+                max-height: 200px;
+            }
+            
+            .scan-results {
+                margin: 1rem;
+            }
+            
+            .disclaimer {
+                font-size: 0.75rem;
+            }
+            
+            .phone-details {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .modal {
+                padding: 1.5rem;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗼 NETWORK SCANNER v2.1</h1>
+        <div style="color: #7d8590; font-size: 0.9rem;">OSINT Interface</div>
+        
+        <!-- Sound Control -->
+        <div class="sound-control">
+            <button class="sound-btn" id="sound-btn" onclick="toggleSound()" title="Toggle Sound">
+                🔊
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column;">            <div class="location-control">
+                <div class="location-header">📍 LIVE LOCATION</div>
+                <div class="location-info" id="location-info">
+                    <span class="location-status" id="location-status"></span>
+                    <span id="location-text">Location tracking disabled</span>
+                </div>
+                <button class="location-btn" id="location-btn" onclick="toggleLiveLocation()">ENABLE TRACKING</button>
+            </div>
+                        <div class="triangle-control">
+                <div class="triangle-header">📐 TRIANGULATION TOOL</div>
+                <div class="triangle-info" id="triangle-info">Click 3 locations to triangulate center point</div>
+                <button class="triangle-btn" id="triangle-btn" onclick="toggleTriangleMode()">START TRIANGULATION</button>
+                <button class="triangle-btn" onclick="clearTriangle()" style="display: none;" id="clear-btn">CLEAR</button>
+            </div>
+            
+            <div class="terminal" id="terminal">
+                <div class="terminal-header">Terminal Output</div>
+                <div class="terminal-content" id="terminal-content"></div>
+            </div>
+
+            <div class="scan-results" id="scan-results">
+                <div class="results-header">Scan Results - Mobile Devices Detected</div>
+                <div class="results-content" id="results-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proximity Warning Modal -->
+    <div class="modal-overlay" id="proximityModal">
+        <div class="modal">
+            <h3>⚠️ PROXIMITY REQUIRED</h3>
+            <p>
+                <strong>Warning:</strong> Physical proximity to scan location required.<br>
+                You must be within <strong>50 meters</strong> of the target coordinates to initiate scan.
+            </p>
+            <p style="font-size: 0.85rem; color: #7d8590;">
+                Emergency override available for authorized personnel.
+            </p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeProximityModal()">CANCEL</button>
+                <button class="modal-btn modal-btn-primary" onclick="proceedWithScan()">PROCEED</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // Game State
+        let gameState = {
+            mainTowerScanned: false,
+            unlockedPoints: [],
+            scanResults: {},
+            triangleMode: false,
+            selectedPoints: [],
+            triangleLayers: [],
+            liveLocation: {
+                enabled: false,
+                marker: null,
+                watchId: null
+            },
+            audioContext: null,
+            soundEnabled: true
+        };
+
+        // Coordinates
+        const COORDINATES = {
+            mainTower: [47.195280, 7.546737],
+            points: [
+                { id: 'point1', coords: [47.20192080405389, 7.551431773165399], name: 'Location Alpha', jamesFrequency: 'high' },
+                { id: 'point2', coords: [47.19745953407531, 7.560497639572649], name: 'Location Beta', jamesFrequency: 'high' },
+                { id: 'point3', coords: [47.20044704892833, 7.558474898043576], name: 'Location Gamma', jamesFrequency: 'high' },
+                { id: 'point4', coords: [47.19762804319435, 7.548987825509507], name: 'Location Delta', jamesFrequency: 'low' },
+                { id: 'point5', coords: [47.195475822590225, 7.555788516611999], name: 'Location Echo', jamesFrequency: 'none' }
+            ]
+        };
+
+        // James' phone number (consistent across all scans)
+        const JAMES_PHONE = '+41 79 187 42 93';
+
+        // Fake phone numbers pool
+        const FAKE_NUMBERS = [
+            '+41 79 000 15 42', '+41 79 123 88 77', '+41 79 456 33 21', '+41 79 789 66 55',
+            '+41 79 234 91 18', '+41 79 567 44 29', '+41 79 890 77 36', '+41 79 345 52 63',
+            '+41 79 678 25 74', '+41 79 901 38 85', '+41 79 456 61 92', '+41 79 789 84 07',
+            '+41 79 012 47 58', '+41 79 345 90 69', '+41 79 678 13 20', '+41 79 234 76 41',
+            '+41 79 567 89 02', '+41 79 890 42 13', '+41 79 123 65 24', '+41 79 456 98 35'
+        ];
+
+        // Fake names pool
+        const FAKE_NAMES = [
+            'Anna', 'Ben', 'Clara', 'David', 'Emma', 'Felix', 'Gina', 'Hans', 'Iris', 'Jan',
+            'Kira', 'Leo', 'Mia', 'Noah', 'Olivia', 'Paul', 'Quinn', 'Rita', 'Sam', 'Tina',
+            'Uwe', 'Vera', 'Will', 'Xara', 'Yves', 'Zoe', 'Alex', 'Beth', 'Carl', 'Dana',
+            'Eric', 'Faye', 'Greg', 'Hope', 'Ivan', 'Jade', 'Kyle', 'Lena', 'Mark', 'Nina'
+        ];
+
+        // Map initialization
+        let map, mainTowerMarker;
+        let pointMarkers = [];
+
+        function initMap() {
+            // Initialize map
+            map = L.map('map').setView(COORDINATES.mainTower, 14);
+
+            // Add dark tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18,
+            }).addTo(map);
+
+            // Add main tower marker
+            mainTowerMarker = L.marker(COORDINATES.mainTower)
+                .addTo(map)
+                .bindPopup(`
+                    <div style="text-align: center; padding: 0.5rem;">
+                        <strong>🗼 MAIN CELL TOWER</strong><br>
+                        Network Hub: CH-BS-001<br><br>
+                        <button class="scan-btn" onclick="scanMainTower()">SCAN NETWORK</button>
+                    </div>
+                `);
+            
+            // Add click handler for triangle mode
+            map.on('click', handleMapClick);
+        }
+
+        function addTerminalLine(text, delay = 0) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const terminalContent = document.getElementById('terminal-content');
+                    const line = document.createElement('div');
+                    line.className = 'terminal-line';
+                    line.textContent = text;
+                    terminalContent.appendChild(line);
+                    terminalContent.scrollTop = terminalContent.scrollHeight;
+                    
+                    // Play terminal sound
+                    playSound('terminal');
+                    
+                    resolve();
+                }, delay);
+            });
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal-content').innerHTML = '';
+        }
+
+        function showTerminal() {
+            document.getElementById('terminal').style.display = 'block';
+        }
+
+        function hideTerminal() {
+            document.getElementById('terminal').style.display = 'none';
+        }
+
+        function showResults() {
+            document.getElementById('scan-results').style.display = 'block';
+        }
+
+        function hideResults() {
+            document.getElementById('scan-results').style.display = 'none';
+        }
+
+        async function scanMainTower() {
+            playSound('button');
+            
+            if (gameState.mainTowerScanned) {
+                // Show previous results
+                displayScanResults('mainTower');
+                return;
+            }
+
+            showTerminal();
+            hideResults();
+            clearTerminal();
+
+            // Scanning animation
+            await addTerminalLine('> Initializing network scanner...', 100);
+            await addTerminalLine('> Establishing uplink to cell tower CH-BS-001...', 800);
+            await addTerminalLine('> Authentication successful', 600);
+            await addTerminalLine('> Scanning for active mobile devices...', 700);
+            await addTerminalLine('> Triangulating signal sources...', 900);
+            await addTerminalLine('> Parsing metadata...', 500);
+            await addTerminalLine('> Cross-referencing network logs...', 800);
+            await addTerminalLine('> Scan complete.', 400);
+            await addTerminalLine('> Found 15 active devices in range', 600);
+            await addTerminalLine('> Unlocking additional network nodes...', 700);
+
+            gameState.mainTowerScanned = true;
+            unlockAllPoints();
+            generateScanResults('mainTower', true);
+            displayScanResults('mainTower');
+            
+            // Play scan complete sound
+            playSound('scan-complete');
+        }
+
+        function unlockAllPoints() {
+            COORDINATES.points.forEach(point => {
+                if (!gameState.unlockedPoints.includes(point.id)) {
+                    const marker = L.marker(point.coords)
+                        .addTo(map)
+                        .bindPopup(`
+                            <div style="text-align: center; padding: 0.5rem;">
+                                <strong>📡 ${point.name}</strong><br>
+                                Node: ${point.id.toUpperCase()}<br><br>
+                                <button class="scan-btn" onclick="scanPoint('${point.id}')">SCAN LOCATION</button>
+                            </div>
+                        `);
+                    
+                    pointMarkers.push({ id: point.id, marker: marker });
+                    gameState.unlockedPoints.push(point.id);
+                }
+            });
+        }
+
+        let currentScanPointId = null;
+
+        function scanPoint(pointId) {
+            currentScanPointId = pointId;
+            playSound('button');
+            showProximityModal();
+        }
+
+        function showProximityModal() {
+            document.getElementById('proximityModal').style.display = 'flex';
+            playSound('scan-complete'); // Modal popup sound
+        }
+
+        function closeProximityModal() {
+            document.getElementById('proximityModal').style.display = 'none';
+            playSound('button');
+            // currentScanPointId NICHT hier zurücksetzen - wird später gebraucht
+        }
+
+        async function proceedWithScan() {
+            // ✅ ERST prüfen, ob currentScanPointId gesetzt ist
+            if (!currentScanPointId) return;
+            
+            // Modal schließen (ohne ID zurückzusetzen)
+            closeProximityModal();
+            
+            // Clear previous results and terminal content
+            const results = document.getElementById('scan-results');
+            results.style.display = 'none';
+            
+            clearTerminal();
+
+            // Scanning animation
+            await addTerminalLine(`> Initializing scan at ${currentScanPointId.toUpperCase()}...`, 100);
+            await addTerminalLine('> Establishing connection to local node...', 800);
+            await addTerminalLine('> Authentication successful', 600);
+            await addTerminalLine('> Scanning for active mobile devices...', 700);
+            await addTerminalLine('> Triangulating signal sources...', 900);
+            await addTerminalLine('> Parsing metadata...', 500);
+            await addTerminalLine('> Cross-referencing network logs...', 800);
+            await addTerminalLine('> Scan complete.', 400);
+            await addTerminalLine(`> Found ${Math.floor(Math.random() * 8) + 7} active devices in range`, 600);
+
+            generateScanResults(currentScanPointId, false);
+            displayScanResults(currentScanPointId);
+            
+            // Play scan complete sound
+            playSound('scan-complete');
+            
+            // ✅ ERST HIER ID zurücksetzen - nach erfolgreichem Scan
+            currentScanPointId = null;
+        }
+
+        function generateScanResults(locationId, isMainTower) {
+            const results = [];
+            const numDevices = isMainTower ? 15 : Math.floor(Math.random() * 8) + 7;
+            
+            // Determine if James should appear based on location
+            let includeJames = false;
+            let jamesFrequency = 'none';
+            
+            if (isMainTower) {
+                includeJames = true;
+                jamesFrequency = 'high';
+            } else {
+                const point = COORDINATES.points.find(p => p.id === locationId);
+                jamesFrequency = point.jamesFrequency;
+                
+                if (jamesFrequency === 'high') {
+                    includeJames = true; // Always appears at high frequency locations (first 3 points)
+                } else if (jamesFrequency === 'low') {
+                    includeJames = Math.random() < 0.3; // 30% chance at low frequency
+                } else {
+                    includeJames = false; // Never appears at echo location
+                }
+            }
+
+            // Add James if he should appear (multiple times for first 3 points)
+            if (includeJames) {
+                const jamesEntries = jamesFrequency === 'high' && !isMainTower ? 
+                    Math.floor(Math.random() * 2) + 2 : 1; // 2-3 times for high frequency points
+                    
+                for (let i = 0; i < jamesEntries; i++) {
+                    results.push({
+                        number: JAMES_PHONE,
+                        name: isMainTower ? 'James' : null, // Only show name at main tower
+                        lastSeen: getRandomTime(),
+                        signal: getRandomSignal(jamesFrequency),
+                        isJames: true
+                    });
+                }
+            }
+
+            // Fill with random numbers
+            const usedNumbers = includeJames ? [JAMES_PHONE] : [];
+            const usedNames = includeJames && isMainTower ? ['James'] : [];
+            while (results.length < numDevices) {
+                const randomNumber = FAKE_NUMBERS[Math.floor(Math.random() * FAKE_NUMBERS.length)];
+                if (!usedNumbers.includes(randomNumber)) {
+                    results.push({
+                        number: randomNumber,
+                        name: isMainTower ? getUnusedName(usedNames) : null, // Only names at main tower
+                        lastSeen: getRandomTime(),
+                        signal: getRandomSignal('random'),
+                        isJames: false
+                    });
+                    usedNumbers.push(randomNumber);
+                }
+            }
+
+            // Shuffle results
+            for (let i = results.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [results[i], results[j]] = [results[j], results[i]];
+            }
+
+            gameState.scanResults[locationId] = results;
+        }
+
+        function getUnusedName(usedNames) {
+            let randomName;
+            do {
+                randomName = FAKE_NAMES[Math.floor(Math.random() * FAKE_NAMES.length)];
+            } while (usedNames.includes(randomName));
+            usedNames.push(randomName);
+            return randomName;
+        }
+
+        function getRandomTime() {
+            const minutes = Math.floor(Math.random() * 120) + 1;
+            if (minutes < 60) {
+                return `${minutes}m ago`;
+            } else {
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m ago` : `${hours}h ago`;
+            }
+        }
+
+        function getRandomSignal(type) {
+            if (type === 'high') {
+                // James usually has good signal at his frequent locations
+                const signals = ['HIGH', 'HIGH', 'HIGH', 'MEDIUM', 'MEDIUM'];
+                return signals[Math.floor(Math.random() * signals.length)];
+            } else if (type === 'low') {
+                const signals = ['LOW', 'LOW', 'MEDIUM'];
+                return signals[Math.floor(Math.random() * signals.length)];
+            } else {
+                const signals = ['LOW', 'MEDIUM', 'HIGH'];
+                return signals[Math.floor(Math.random() * signals.length)];
+            }
+        }
+
+        function displayScanResults(locationId) {
+            const results = gameState.scanResults[locationId];
+            const resultsContent = document.getElementById('results-content');
+            
+            resultsContent.innerHTML = '';
+
+            results.forEach(device => {
+                const entry = document.createElement('div');
+                entry.className = 'phone-entry'; // No special highlighting for James
+                
+                entry.innerHTML = `
+                    <div class="phone-number">
+                        ${device.number}
+                        ${device.name ? ` (${device.name})` : ''}
+                    </div>
+                    <div class="phone-details">
+                        <span>Last seen: ${device.lastSeen}</span>
+                        <span class="signal-strength signal-${device.signal.toLowerCase()}">${device.signal}</span>
+                    </div>
+                `;
+                
+                resultsContent.appendChild(entry);
+            });
+
+            showResults();
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            initAudio();
+        });
+
+        // Audio System
+        function initAudio() {
+            try {
+                gameState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.log('Web Audio API not supported');
+                gameState.soundEnabled = false;
+            }
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const btn = document.getElementById('sound-btn');
+            
+            if (gameState.soundEnabled) {
+                btn.textContent = '🔊';
+                btn.classList.remove('muted');
+                btn.title = 'Mute Sound';
+                playSound('button');
+            } else {
+                btn.textContent = '🔇';
+                btn.classList.add('muted');
+                btn.title = 'Unmute Sound';
+            }
+        }
+
+        function playSound(type) {
+            if (!gameState.soundEnabled || !gameState.audioContext) return;
+            
+            const ctx = gameState.audioContext;
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            switch (type) {
+                case 'terminal':
+                    oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+                    oscillator.type = 'square';
+                    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.1);
+                    break;
+                    
+                case 'scan-complete':
+                    oscillator.frequency.setValueAtTime(600, ctx.currentTime);
+                    oscillator.frequency.setValueAtTime(800, ctx.currentTime + 0.1);
+                    oscillator.frequency.setValueAtTime(1000, ctx.currentTime + 0.2);
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.3);
+                    break;
+                    
+                case 'location':
+                    oscillator.frequency.setValueAtTime(1200, ctx.currentTime);
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.2);
+                    break;
+                    
+                case 'triangulation':
+                    oscillator.frequency.setValueAtTime(400, ctx.currentTime);
+                    oscillator.frequency.setValueAtTime(600, ctx.currentTime + 0.05);
+                    oscillator.frequency.setValueAtTime(800, ctx.currentTime + 0.1);
+                    oscillator.type = 'triangle';
+                    gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.15);
+                    break;
+                    
+                case 'button':
+                    oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
+                    oscillator.type = 'square';
+                    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.05);
+                    break;
+                    
+                case 'error':
+                    oscillator.frequency.setValueAtTime(200, ctx.currentTime);
+                    oscillator.type = 'sawtooth';
+                    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.5);
+                    break;
+            }
+        }
+
+        // Live Location Functions
+        function toggleLiveLocation() {
+            playSound('button');
+            if (gameState.liveLocation.enabled) {
+                stopLiveLocation();
+            } else {
+                startLiveLocation();
+            }
+        }
+
+        function startLiveLocation() {
+            if (!navigator.geolocation) {
+                updateLocationStatus('Geolocation not supported', false);
+                playSound('error');
+                return;
+            }
+
+            updateLocationStatus('Requesting location access...', false);
+            playSound('button');
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000 // 1 minute
+            };
+
+            gameState.liveLocation.watchId = navigator.geolocation.watchPosition(
+                onLocationSuccess,
+                onLocationError,
+                options
+            );
+
+            gameState.liveLocation.enabled = true;
+            document.getElementById('location-btn').textContent = 'DISABLE TRACKING';
+            document.getElementById('location-btn').classList.add('active');
+        }
+
+        function stopLiveLocation() {
+            if (gameState.liveLocation.watchId) {
+                navigator.geolocation.clearWatch(gameState.liveLocation.watchId);
+                gameState.liveLocation.watchId = null;
+            }
+
+            if (gameState.liveLocation.marker) {
+                map.removeLayer(gameState.liveLocation.marker);
+                gameState.liveLocation.marker = null;
+            }
+
+            gameState.liveLocation.enabled = false;
+            updateLocationStatus('Location tracking disabled', false);
+            
+            document.getElementById('location-btn').textContent = 'ENABLE TRACKING';
+            document.getElementById('location-btn').classList.remove('active');
+        }
+
+        function onLocationSuccess(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            updateLocationStatus(`Active (±${Math.round(accuracy)}m accuracy)`, true);
+            playSound('location');
+
+            // Remove old marker if exists
+            if (gameState.liveLocation.marker) {
+                map.removeLayer(gameState.liveLocation.marker);
+            }
+
+            // Add user location marker
+            gameState.liveLocation.marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'user-location-marker',
+                    html: '📱',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map)
+            .bindPopup(`
+                <div style="text-align: center; padding: 0.5rem;">
+                    <strong>📱 YOUR DEVICE</strong><br>
+                    Live Location<br>
+                    <small>Lat: ${lat.toFixed(6)}</small><br>
+                    <small>Lng: ${lng.toFixed(6)}</small><br>
+                    <small>Accuracy: ±${Math.round(accuracy)}m</small>
+                </div>
+            `);
+
+            // Add accuracy circle (smaller and red)
+            const accuracyCircle = L.circle([lat, lng], {
+                radius: Math.min(accuracy, 50), // Max 50m radius for better visibility
+                color: '#f85149',
+                fillColor: '#f85149',
+                fillOpacity: 0.2,
+                weight: 2
+            }).addTo(map);
+
+            // Store circle reference to remove it later
+            gameState.liveLocation.accuracyCircle = accuracyCircle;
+        }
+
+        function onLocationError(error) {
+            let message = '';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    message = 'Location access denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = 'Location unavailable';
+                    break;
+                case error.TIMEOUT:
+                    message = 'Location request timeout';
+                    break;
+                default:
+                    message = 'Unknown location error';
+                    break;
+            }
+            
+            updateLocationStatus(message, false);
+            gameState.liveLocation.enabled = false;
+            document.getElementById('location-btn').textContent = 'ENABLE TRACKING';
+            document.getElementById('location-btn').classList.remove('active');
+        }
+
+        function updateLocationStatus(text, active) {
+            document.getElementById('location-text').textContent = text;
+            const status = document.getElementById('location-status');
+            
+            if (active) {
+                status.classList.add('active');
+            } else {
+                status.classList.remove('active');
+            }
+        }
+        function toggleTriangleMode() {
+            playSound('button');
+            gameState.triangleMode = !gameState.triangleMode;
+            const btn = document.getElementById('triangle-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const info = document.getElementById('triangle-info');
+            
+            if (gameState.triangleMode) {
+                btn.textContent = 'STOP TRIANGULATION';
+                btn.classList.add('active');
+                clearBtn.style.display = 'inline-block';
+                info.textContent = 'Click 3 locations on the map to create triangle';
+                map.getContainer().style.cursor = 'crosshair';
+            } else {
+                btn.textContent = 'START TRIANGULATION';
+                btn.classList.remove('active');
+                clearBtn.style.display = 'none';
+                info.textContent = 'Click 3 locations to triangulate center point';
+                map.getContainer().style.cursor = '';
+            }
+        }
+
+        function handleMapClick(e) {
+            if (!gameState.triangleMode) return;
+            
+            playSound('button'); // Click sound for map clicks
+            
+            const latlng = e.latlng;
+            gameState.selectedPoints.push(latlng);
+            
+            // Add marker for selected point
+            const marker = L.circleMarker(latlng, {
+                color: '#f79009',
+                fillColor: '#f79009',
+                fillOpacity: 0.7,
+                radius: 8
+            }).addTo(map);
+            
+            gameState.triangleLayers.push(marker);
+            
+            const info = document.getElementById('triangle-info');
+            info.textContent = `Selected ${gameState.selectedPoints.length}/3 points`;
+            
+            // If 3 points selected, create triangle
+            if (gameState.selectedPoints.length === 3) {
+                createTriangle();
+            }
+        }
+
+        function createTriangle() {
+            const points = gameState.selectedPoints;
+            
+            // Create triangle polygon
+            const triangle = L.polygon(points, {
+                color: '#f79009',
+                weight: 2,
+                fillColor: '#f79009',
+                fillOpacity: 0.1
+            }).addTo(map);
+            
+            gameState.triangleLayers.push(triangle);
+            
+            // Calculate centroid (center of triangle)
+            const centroid = calculateCentroid(points);
+            
+            // Add marker for center point
+            const centerMarker = L.marker(centroid, {
+                icon: L.divIcon({
+                    className: 'center-marker',
+                    html: '🎯',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map)
+            .bindPopup(`
+                <div style="text-align: center; padding: 0.5rem;">
+                    <strong>📐 TRIANGULATION CENTER</strong><br>
+                    Calculated Position:<br>
+                    <small>Lat: ${centroid.lat.toFixed(6)}</small><br>
+                    <small>Lng: ${centroid.lng.toFixed(6)}</small>
+                </div>
+            `);
+            
+            gameState.triangleLayers.push(centerMarker);
+            
+            // Update UI
+            const info = document.getElementById('triangle-info');
+            info.textContent = 'Triangulation complete! Center point calculated.';
+            
+            // Disable triangle mode
+            gameState.triangleMode = false;
+            const btn = document.getElementById('triangle-btn');
+            btn.textContent = 'NEW TRIANGULATION';
+            btn.classList.remove('active');
+            map.getContainer().style.cursor = '';
+            
+            // Reset selected points for next triangulation
+            gameState.selectedPoints = [];
+            
+            // Play triangulation complete sound
+            playSound('triangulation');
+        }
+
+        function calculateCentroid(points) {
+            let lat = 0, lng = 0;
+            points.forEach(point => {
+                lat += point.lat;
+                lng += point.lng;
+            });
+            return {
+                lat: lat / points.length,
+                lng: lng / points.length
+            };
+        }
+
+        function clearTriangle() {
+            playSound('button');
+            // Remove all triangle layers from map
+            gameState.triangleLayers.forEach(layer => {
+                map.removeLayer(layer);
+            });
+            
+            // Reset state
+            gameState.triangleLayers = [];
+            gameState.selectedPoints = [];
+            gameState.triangleMode = false;
+            
+            // Update UI
+            const btn = document.getElementById('triangle-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const info = document.getElementById('triangle-info');
+            
+            btn.textContent = 'START TRIANGULATION';
+            btn.classList.remove('active');
+            clearBtn.style.display = 'none';
+            info.textContent = 'Click 3 locations to triangulate center point';
+            map.getContainer().style.cursor = '';
+        }
+
+        // Make functions globally available for onclick events
+        window.scanMainTower = scanMainTower;
+        window.scanPoint = scanPoint;
+        window.closeProximityModal = closeProximityModal;
+        window.proceedWithScan = proceedWithScan;
+        window.toggleTriangleMode = toggleTriangleMode;
+        window.clearTriangle = clearTriangle;
+        window.toggleLiveLocation = toggleLiveLocation;
+        window.toggleSound = toggleSound;
+    </script>
+</body>
+</html>
