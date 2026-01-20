@@ -436,10 +436,7 @@
                 margin: 1rem;
             }
             
-            #map {
-                pointer-events: none;
-                user-select: none;
-            }
+
             
             .terminal {
                 margin: 1rem;
@@ -591,8 +588,21 @@
         let pointMarkers = [];
 
         function initMap() {
-            // Initialize map
-            map = L.map('map').setView(COORDINATES.mainTower, 14);
+            // Check if mobile device
+            const isMobile = window.innerWidth <= 768;
+            
+            // Initialize map with conditional options
+            const mapOptions = {
+                dragging: !isMobile,
+                touchZoom: !isMobile,
+                doubleClickZoom: !isMobile,
+                scrollWheelZoom: !isMobile,
+                boxZoom: !isMobile,
+                keyboard: !isMobile,
+                zoomControl: !isMobile
+            };
+            
+            map = L.map('map', mapOptions).setView(COORDINATES.mainTower, 14);
 
             // Add dark tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
