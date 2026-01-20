@@ -466,6 +466,19 @@
             .modal-buttons {
                 flex-direction: column;
             }
+            
+            /* Ensure sound control is visible on mobile */
+            .sound-control {
+                top: 0.5rem;
+                right: 0.5rem;
+                padding: 0.75rem;
+                z-index: 1001;
+            }
+            
+            .sound-btn {
+                font-size: 1.4rem;
+                padding: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -896,6 +909,26 @@
         function initAudio() {
             try {
                 gameState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Handle mobile audio restrictions
+                if (gameState.audioContext.state === 'suspended') {
+                    // Add event listeners for user interaction to resume audio context
+                    const resumeAudio = () => {
+                        if (gameState.audioContext.state === 'suspended') {
+                            gameState.audioContext.resume().then(() => {
+                                console.log('Audio context resumed');
+                            });
+                        }
+                        // Remove listeners after first interaction
+                        document.removeEventListener('touchstart', resumeAudio);
+                        document.removeEventListener('click', resumeAudio);
+                        document.removeEventListener('keydown', resumeAudio);
+                    };
+                    
+                    document.addEventListener('touchstart', resumeAudio, { once: true });
+                    document.addEventListener('click', resumeAudio, { once: true });
+                    document.addEventListener('keydown', resumeAudio, { once: true });
+                }
             } catch (e) {
                 console.log('Web Audio API not supported');
                 gameState.soundEnabled = false;
@@ -903,6 +936,11 @@
         }
 
         function toggleSound() {
+            // Resume audio context if needed (mobile fix)
+            if (gameState.audioContext && gameState.audioContext.state === 'suspended') {
+                gameState.audioContext.resume();
+            }
+            
             gameState.soundEnabled = !gameState.soundEnabled;
             const btn = document.getElementById('sound-btn');
             
@@ -921,6 +959,18 @@
         function playSound(type) {
             if (!gameState.soundEnabled || !gameState.audioContext) return;
             
+            // Resume audio context if suspended (mobile fix)
+            if (gameState.audioContext.state === 'suspended') {
+                gameState.audioContext.resume().then(() => {
+                    actuallyPlaySound(type);
+                });
+                return;
+            }
+            
+            actuallyPlaySound(type);
+        }
+        
+        function actuallyPlaySound(type) {
             const ctx = gameState.audioContext;
             const oscillator = ctx.createOscillator();
             const gainNode = ctx.createGain();
