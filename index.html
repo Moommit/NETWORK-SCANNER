@@ -591,21 +591,8 @@
         let pointMarkers = [];
 
         function initMap() {
-            // Check if mobile device
-            const isMobile = window.innerWidth <= 768;
-            
-            // Initialize map with conditional options
-            const mapOptions = {
-                dragging: !isMobile,
-                touchZoom: !isMobile,
-                doubleClickZoom: !isMobile,
-                scrollWheelZoom: !isMobile,
-                boxZoom: !isMobile,
-                keyboard: !isMobile,
-                zoomControl: !isMobile
-            };
-            
-            map = L.map('map', mapOptions).setView(COORDINATES.mainTower, 14);
+            // Initialize map with all interactions enabled
+            map = L.map('map').setView(COORDINATES.mainTower, 14);
 
             // Add dark tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
